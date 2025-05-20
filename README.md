@@ -1,92 +1,92 @@
-# NestJS Passport Authentication
+# 🔐 NestJS + JWT Auth: ระบบยืนยันตัวตนด้วย Token
 
-A NestJS application with JWT authentication using Passport.js
+โปรเจกต์นี้เป็นตัวอย่างการสร้างระบบ Authentication ด้วย NestJS, Passport.js และ JWT (JSON Web Token) โดยเชื่อมต่อกับฐานข้อมูลผ่าน Prisma ORM เหมาะสำหรับนำไปต่อยอดในระบบที่ต้องมีการยืนยันตัวตนผู้ใช้
 
-## Features
+---
 
-- JWT Authentication
-- User management
-- Secure password hashing
-- Prisma ORM integration
-- TypeScript support
+## ⚙️ เทคโนโลยีที่ใช้
 
-## Prerequisites
+- **NestJS** – Backend Framework ที่เขียนด้วย TypeScript
+- **Passport.js** – Middleware สำหรับ authentication
+- **JWT (jsonwebtoken)** – ระบบ token-based authentication
+- **Prisma ORM** – จัดการฐานข้อมูลแบบ type-safe
+- **PostgreSQL** – ตัวอย่างฐานข้อมูลที่ใช้งานผ่าน Docker
+- **class-validator / class-transformer** – ตรวจสอบและแปลงค่าจาก DTO
 
-- Node.js (v16 or higher)
-- npm or yarn
-- PostgreSQL (configured in .env file)
+---
 
-## Installation
+## 🚀 ขั้นตอนการพัฒนา
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Copy `.env.example` to `.env` and configure your environment variables
-4. Run database migrations:
-   ```bash
-   npx prisma migrate dev
-   ```
+### 1. สร้างโมดูล Auth และ User
+- แยก controller, service, และ DTO อย่างชัดเจน
+- ใช้ Passport strategy เพื่อจัดการ JWT
 
-## Running the application
-
+### 2. ติดตั้ง Passport และ JWT
 ```bash
-# development
-$ npm run start
+npm install @nestjs/passport passport passport-jwt
+npm install @nestjs/jwt
+```
+3. ตั้งค่า Prisma ORM
+แก้ไข schema.prisma ให้มี model User
 
-# watch mode
-$ npm run start:dev
+```
+prisma migrate dev 
+prisma generate
+```
+4. เขียน service สำหรับสมัครสมาชิก / เข้าสู่ระบบ
+สร้าง user ใหม่ด้วย Prisma
 
-# production mode
-$ npm run start:prod
+ตรวจสอบรหัสผ่านด้วย bcrypt
+
+5. ใช้ AuthGuard ป้องกัน route ที่ต้อง login
+- เพิ่ม **@UseGuards(JwtAuthGuard)** 
+
+6. เพิ่ม ValidationPipe และ API Prefix
+```
+app.setGlobalPrefix('api/v1');
+app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 ```
 
-## API Endpoints
+### 🔐 ตัวอย่าง JWT API
 
-### Authentication
+| Method | Endpoint                | Description                    |
+|--------|-------------------------|--------------------------------|
+| POST   | `/api/v1/auth/signup`   | สมัครสมาชิกใหม่               |
+| POST   | `/api/v1/auth/login`    | เข้าสู่ระบบ รับ JWT            |
+| GET    | `/api/v1/users/profile` | ดึงข้อมูลผู้ใช้ (ต้องใช้ token) |
 
-- POST `/auth/login` - Login with email and password
-- POST `/auth/register` - Register new user
-
-### Users
-
-- GET `/users` - Get all users (protected)
-- GET `/users/:id` - Get user by ID (protected)
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/database"
-JWT_SECRET=your-secret-key
-JWT_EXPIRATION=24h
-PORT=3000
+## 📁 โครงสร้างโปรเจกต์
 ```
-
-## Testing
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+src/
+├── auth/ ← โมดูลสำหรับยืนยันตัวตน
+│ ├── auth.controller.ts
+│ ├── auth.service.ts
+│ ├── auth.module.ts
+│ ├── dto/
+│ │ ├── login.dto.ts
+│ │ └── signup.dto.ts
+│ └── strategies/
+│ └── jwt.strategy.ts
+│
+├── users/ ← โมดูลสำหรับจัดการผู้ใช้
+│ ├── users.controller.ts
+│ ├── users.service.ts
+│ ├── users.module.ts
+│ └── entities/
+│ └── user.entity.ts
+│
+├── prisma/ ← Prisma service และ module
+│ ├── prisma.module.ts
+│ └── prisma.service.ts
+│
+├── app.module.ts ← โมดูลหลักของแอป
+└── main.ts ← Entry point ของแอป
 ```
+## 🧪 การทดสอบ API
 
-## Technologies Used
+คุณสามารถทดสอบ API ได้ผ่าน Postman หรือ curl โดยทำตามขั้นตอนดังนี้:
 
-- NestJS
-- Passport.js
-- JWT
-- Prisma ORM
-- TypeScript
-- PostgreSQL
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details
+1. `POST /api/v1/auth/signup` – สมัครสมาชิกใหม่ โดยส่ง email และ password
+2. `POST /api/v1/auth/login` – เข้าสู่ระบบเพื่อรับ JWT token
+3. นำ token ที่ได้จากขั้นตอนที่ 2 ไปใช้กับ header `Authorization: Bearer <token>` เพื่อเข้าถึง endpoint:
+   - `GET /api/v1/users/profile` – ดึงข้อมูลผู้ใช้ (ต้องยืนยันตัวตน)
